@@ -1,0 +1,103 @@
+// Gradle's part of SquidCI's test splitting. A planner lists each Test task's classes and runs
+// none; a parallel job runs only its own, marks each done and lists what it leaves behind.
+def plan = System.getenv('SQUIDCI_SPLIT_PLAN')
+def shard = System.getenv('SQUIDCI_SPLIT_SHARD')
+def done = System.getenv('SQUIDCI_SPLIT_DONE')
+def outputs = System.getenv('SQUIDCI_SPLIT_OUTPUTS')
+if (plan) {
+  def out = new File(plan)
+  gradle.taskGraph.whenReady { graph ->
+    graph.allTasks.findAll { it instanceof Test }.each { Test task ->
+      task.outputs.doNotCacheIf('SquidCI: its tests run in shards') { true }
+      task.outputs.upToDateWhen { false }
+      def path = task.path
+      task.doFirst {
+        def lines = []
+        task.candidateClassFiles.visit { details ->
+          if (!details.directory && details.name.endsWith('.class') && !details.name.contains('$')) {
+            def name = details.relativePath.pathString.replace('/', '.') - ~/\.class$/
+            lines << groovy.json.JsonOutput.toJson([group: path, unit: name])
+          }
+        }
+        synchronized (out) { lines.each { out << it << '\n' } }
+        throw new StopExecutionException()
+      }
+    }
+  }
+}
+
+if (shard) {
+  def byGroup = [:].withDefault { [] }
+  new File(shard).eachLine { line ->
+    if (line.trim()) {
+      def unit = new groovy.json.JsonSlurper().parseText(line)
+      byGroup[unit.group] << unit.unit
+    }
+  }
+  gradle.taskGraph.whenReady { graph ->
+    graph.allTasks.findAll { it instanceof Test }.each { Test task ->
+      def mine = byGroup[task.path]
+      if (mine.isEmpty()) {
+        task.enabled = false
+      } else {
+        mine.each { name ->
+          task.filter.includeTestsMatching(name)
+          task.filter.includeTestsMatching(name + '$*')
+        }
+        task.filter.failOnNoMatchingTests = false
+        if (done) {
+          markDone(task, mine as Set, new File(done))
+        }
+        if (outputs) {
+          listOutputs(task, new File(outputs))
+        }
+      }
+    }
+  }
+}
+
+// What the task leaves for the job's continuation, once it has run: its
+// JUnit XML, copied, and its JaCoCo execution data, which concatenated is
+// what every parallel job's tests would have written to one file.
+def listOutputs(Test task, File out) {
+  task.doLast {
+    def lines = []
+    def xml = task.reports.junitXml.outputLocation.get().asFile
+    if (xml.isDirectory()) {
+      xml.eachFileMatch(~/.*\.xml/) { file -> lines << [path: file.absolutePath, merge: 'copy'] }
+    }
+    def jacoco = task.extensions.findByName('jacoco')
+    if (jacoco != null && jacoco.enabled && jacoco.destinationFile != null && jacoco.destinationFile.isFile()) {
+      lines << [path: jacoco.destinationFile.absolutePath, merge: 'concat']
+    }
+    def text = lines.collect { groovy.json.JsonOutput.toJson(it) + '\n' }.join('')
+    synchronized (out) { out.append(text) }
+  }
+}
+
+// Each of the task's own classes, as it ends: one line, written whole.
+def markDone(Test task, Set wanted, File out) {
+  def path = task.path
+  def failures = [:].withDefault { [] }
+  task.addTestListener(new TestListener() {
+    void beforeSuite(TestDescriptor suite) {}
+    void beforeTest(TestDescriptor test) {}
+    void afterTest(TestDescriptor test, TestResult result) {
+      if (result.resultType == TestResult.ResultType.FAILURE && test.className) {
+        def message = result.exception?.message ?: ''
+        failures[test.className.tokenize('$')[0]] << [suite: test.className, name: test.name, message: message.take(1000)]
+      }
+    }
+    void afterSuite(TestDescriptor suite, TestResult result) {
+      if (suite.className && suite.className == suite.name && wanted.contains(suite.className)) {
+        def line = groovy.json.JsonOutput.toJson([
+          group: path,
+          unit: suite.className,
+          tests: [passed: result.successfulTestCount, failed: result.failedTestCount, skipped: result.skippedTestCount],
+          failures: failures.remove(suite.className) ?: [],
+        ])
+        synchronized (out) { out.append(line + '\n') }
+      }
+    }
+  })
+}

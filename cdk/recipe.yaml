@@ -1,0 +1,61 @@
+format: 1
+name: cdk
+summary: Runs the AWS CDK. On EC2 the CLI, and publish to record the stacks for a later deploy; on Lambda, deploy, diff or destroy what was published.
+
+input:
+  string: command
+  fields:
+    command:
+      type: string
+      required: true
+      pattern: "^[a-z][a-z-]{0,31}$"
+      description: the cdk command, or publish
+      example: deploy
+    dir:
+      type: path
+      description: the app's directory, from the repository's root
+      example: infra
+    app:
+      type: command
+      description: the command that runs the app, in place of cdk.json's
+    stacks:
+      type: list
+      expands: true
+      max: 50
+      description: stack names or patterns, every stack when none
+      example: "[web-$SQUIDCI_ENVIRONMENT]"
+    context:
+      type: map
+      expands: true
+      max: 50
+      description: context keys and values, as cdk -c
+    profile:
+      type: string
+      pattern: "^[a-z][a-z0-9-]{0,31}$"
+      description: one of the job's AWS profiles to run as
+      example: prod
+    parameters:
+      type: map
+      expands: true
+      max: 50
+      description: CloudFormation parameters, Name or stack:Name
+    rollback:
+      type: boolean
+      description: false leaves a failed stack as it failed
+    args:
+      type: command
+      description: more arguments for the CLI, on EC2
+      example: --require-approval never
+
+label: "cdk {{command}}{{#stacks}} {{.}}{{/stacks}}"
+docs: README.md
+
+shell:
+  isolated: true
+  script: run.sh
+
+node:
+  script: run.mjs
+  input:
+    command:
+      enum: [deploy, diff, destroy]

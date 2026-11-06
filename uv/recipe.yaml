@@ -1,0 +1,25 @@
+format: 1
+name: uv
+summary: Runs uv in a job set up for it, the lockfile synced and the Python it pins installed.
+icon: uv
+
+input:
+  string: args
+  fields:
+    args:
+      type: command
+      required: true
+      description: what to run with uv
+      example: run pytest
+
+label: "uv {{args}}"
+docs: README.md
+
+shell:
+  requires: [uv]
+  cache:
+    UV_CACHE_DIR: uv
+  tests:
+    live: pytest
+  setup: setup.sh
+  script: run.sh

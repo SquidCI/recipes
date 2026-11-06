@@ -1,0 +1,28 @@
+#!/usr/bin/env bash
+# Fake docker: logs each call on stderr and answers as a daemon and registry would. DOCKER_EXISTING=1: the tag is already pushed.
+case "$1 $2" in
+  "info "*|"version "*)
+    [ "$1" = version ] && echo amd64
+    exit 0 ;;
+  "login "*) cat >/dev/null; exit 0 ;;
+esac
+echo "docker $*" >&2
+case "$1 $2 $3" in
+  "buildx version"*) exit 0 ;;
+  "buildx build"*)
+    while [ $# -gt 0 ]; do
+      [ "$1" = --metadata-file ] && printf '{"containerimage.digest": "sha256:bbbb"}' > "$2"
+      shift
+    done ;;
+  "buildx imagetools inspect")
+    case "$4" in
+      *@sha256:*) ;;
+      *) [ "$DOCKER_EXISTING" = 1 ] || exit 1 ;;
+    esac
+    case "$6" in
+      *Image*) echo '{"architecture": "arm64"}' ;;
+      *) echo '{"mediaType": "application/vnd.oci.image.manifest.v1+json", "digest": "sha256:cccc", "size": 1234}' ;;
+    esac ;;
+  "push "*) echo "1: digest: sha256:aaaa size: 1" ;;
+esac
+exit 0

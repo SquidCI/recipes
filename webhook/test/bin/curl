@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+# Fake curl: prints the POST and its body, on stderr, and answers the status CURL_STATUS says.
+body=
+url=
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --data-binary) body=$(cat "${2#@}"); shift ;;
+    -o|-w|--max-time|--retry|-X|-H) shift ;;
+    -*) ;;
+    *) url=$1 ;;
+  esac
+  shift
+done
+echo "POST $url $body" >&2
+printf '%s' "${CURL_STATUS:-200}"

@@ -1,0 +1,30 @@
+format: 1
+name: webhook
+summary: Posts a body as JSON to a URL, with the run's and the deploy's details filled in.
+
+input:
+  fields:
+    url:
+      type: string
+      required: true
+      max: 2048
+      pattern: "^[Hh][Tt][Tt][Pp][Ss]?://[A-Za-z0-9\\-._~:/?#\\[\\]!$&()*+,;=%]+$"
+      description: an http or https URL, written out in full
+      example: https://example.com/hook
+    body:
+      type: json
+      placeholders: true
+      max: 16384
+      description: what to post, as JSON
+      example: "{text: deployed}"
+
+label: "webhook POST {{url}}"
+docs: README.md
+
+shell:
+  lib: lib.sh
+  setup: setup.sh
+  script: run.sh
+
+node:
+  script: run.mjs

@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+case "$1 $2" in
+  "sts get-caller-identity") echo 111111111111 ;;
+  "configure get") echo eu-west-1 ;;
+esac
