@@ -1,0 +1,72 @@
+format: 1
+name: agent
+summary: Starts an AI agent's session with a prompt, and moves on without waiting for it.
+icon: agent
+
+input:
+  fields:
+    provider:
+      type: string
+      enum: [anthropic]
+      description: whose agent it is
+      example: anthropic
+    agent:
+      type: string
+      required: true
+      pattern: "^agent_[A-Za-z0-9]+$"
+      description: the Claude Managed Agent to start, by id
+      example: agent_01HXYZ
+    agent-environment:
+      type: string
+      required: true
+      pattern: "^env_[A-Za-z0-9]+$"
+      description: the Managed Agents environment its session runs in, by id
+      example: env_01HXYZ
+    prompt:
+      type: string
+      required: true
+      placeholders: true
+      max: 16384
+      description: what to ask the agent
+      example: "Check {{environment}} is healthy after {{commit.short}}"
+    title:
+      type: string
+      placeholders: true
+      max: 200
+      description: the session's title
+      example: "{{component}} to {{environment}}"
+    vaults:
+      type: list
+      description: the vaults its session gets, by id
+      example: "[vlt_01HXYZ]"
+    organization:
+      type: string
+      pattern: "^[0-9a-f-]{36}$"
+      description: the Anthropic organization's id, else ANTHROPIC_ORGANIZATION_ID
+      example: 00000000-0000-0000-0000-000000000000
+    service-account:
+      type: string
+      pattern: "^svac_[A-Za-z0-9]+$"
+      description: the service account the federation rule targets, else ANTHROPIC_SERVICE_ACCOUNT_ID
+      example: svac_01HXYZ
+    federation-rule:
+      type: string
+      pattern: "^fdrl_[A-Za-z0-9]+$"
+      description: the federation rule trusting this plane's job tokens, else ANTHROPIC_FEDERATION_RULE_ID
+      example: fdrl_01HXYZ
+    workspace:
+      type: string
+      pattern: "^wrkspc_[A-Za-z0-9]+$"
+      description: the workspace to start it in, else ANTHROPIC_WORKSPACE_ID, else the rule's only one
+      example: wrkspc_01HXYZ
+
+label: "agent {{agent}}"
+docs: README.md
+
+shell:
+  requires: [node]
+  isolated: true
+  script: run.sh
+
+node:
+  script: run.mjs

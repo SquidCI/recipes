@@ -1,0 +1,63 @@
+format: 1
+name: docker
+summary: Builds an image and pushes it, or builds it in a build and pushes it from a later section.
+icon: docker
+
+input:
+  fields:
+    image:
+      type: string
+      required: true
+      max: 255
+      pattern: "^(?:[A-Za-z0-9.-]+(?::[0-9]+)?/)?[a-z0-9]+(?:(?:[._]|__|-+)[a-z0-9]+)*(?:/[a-z0-9]+(?:(?:[._]|__|-+)[a-z0-9]+)*)*$"
+      description: a repository, with the tag given as tag
+      example: public.ecr.aws/example/web
+    tag:
+      type: string
+      required: true
+      expands: true
+      max: 255
+      pattern: "^(?:[A-Za-z0-9._-]|\\$[A-Za-z_][A-Za-z0-9_]*|\\$\\{[A-Za-z_][A-Za-z0-9_]*\\})+$"
+      description: a tag, naming variables as $NAME or ${NAME}
+      example: $SQUIDCI_FINGERPRINT
+    push:
+      type: boolean
+      description: whether to push it; false builds it, and in a build stages it for a later section to push
+    from:
+      type: string
+      enum: [build]
+      description: where the image comes from instead of being built
+    skip-existing:
+      type: boolean
+      description: whether to build and push nothing when image:tag is already there
+    context:
+      type: path
+      description: the build context, from the repository's root
+      example: frontend
+    file:
+      type: path
+      description: the Dockerfile, from the repository's root
+      example: frontend/Dockerfile
+    args:
+      type: map
+      expands: true
+      max: 50
+      description: build arguments, naming variables as $NAME or ${NAME}
+      example: "{VERSION: $SQUIDCI_FINGERPRINT12}"
+    secrets:
+      type: list
+      max: 50
+      description: imported secrets the build may read
+      example: "[NPM_TOKEN]"
+    build:
+      type: command
+      description: a command that builds $SQUIDCI_IMAGE into the job's daemon, in place of a Dockerfile
+      example: ./gradlew bootBuildImage --imageName=$SQUIDCI_IMAGE
+
+label: "docker {{image}}:{{tag}}"
+docs: README.md
+
+shell:
+  lib: lib.sh
+  setup: setup.sh
+  script: run.sh

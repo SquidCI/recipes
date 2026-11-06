@@ -1,0 +1,3 @@
+#!/usr/bin/env bash
+# Fake nvm: echoes its arguments.
+echo "nvm $*"

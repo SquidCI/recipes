@@ -1,0 +1,25 @@
+format: 1
+name: pnpm
+summary: Runs pnpm in a job set up for it, Node as the repository pins it and the lockfile installed.
+icon: pnpm
+
+input:
+  string: args
+  fields:
+    args:
+      type: command
+      required: true
+      description: what to run with pnpm
+      example: test
+
+label: "pnpm {{args}}"
+docs: README.md
+
+shell:
+  requires: [pnpm]
+  cache:
+    pnpm_config_store_dir: pnpm
+  tests:
+    live: node
+  setup: setup.sh
+  script: run.sh

@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+# Fake cdk: logs its arguments on stderr; synth writes a one-stack assembly to --output, list prints it.
+echo "cdk $*" >&2
+all=" $* "
+out=
+while [ $# -gt 0 ]; do [ "$1" = --output ] && out=$2; shift; done
+if [ -n "$out" ]; then
+  mkdir -p "$out"
+  printf '{"artifacts":{"web":{"type":"aws:cloudformation:stack","environment":"aws://unknown-account/unknown-region","displayName":"web","properties":{"stackTemplateAssetObjectUrl":"s3://b/web.json","stackName":"web-dev"}}}}' > "$out/manifest.json"
+fi
+case "$all" in *" list "*) printf '[{"name":"web-dev","environment":{"name":"aws://unknown-account/unknown-region"}}]' ;; esac
+exit 0

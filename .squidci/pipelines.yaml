@@ -1,0 +1,9 @@
+# yaml-language-server: $schema=https://squidci.com/schema/pipelines.json
+# Every recipe's tests, on every change. Nothing deploys: cells read main.
+components:
+  recipes:
+    runner:
+      arch: arm64
+    test:
+      steps:
+        - bash test/run.sh

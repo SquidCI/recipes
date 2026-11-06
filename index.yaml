@@ -1,0 +1,10 @@
+# Index of recipes in this repo. Folders not listed here are not published yet.
+format: 1
+recipes:
+  uv: {folder: uv}
+  pnpm: {folder: pnpm}
+  webhook: {folder: webhook}
+  gradle: {folder: gradle}
+  docker: {folder: docker}
+  cdk: {folder: cdk}
+  agent: {folder: agent}

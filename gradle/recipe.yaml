@@ -1,0 +1,33 @@
+format: 1
+name: gradle
+summary: Runs ./gradlew from the build's root; with split, its tests across parallel jobs.
+icon: gradle
+
+input:
+  string: run
+  fields:
+    run:
+      type: command
+      required: true
+      description: what to run with ./gradlew
+      example: build
+    dir:
+      type: path
+      description: the build's root, where settings.gradle is
+      example: services
+    split:
+      type: split
+      description: how many parallel jobs to run its tests in
+
+label: "gradle {{run}}{{#dir}} (in {{dir}}){{/dir}}"
+docs: README.md
+
+shell:
+  requires: [java]
+  cache:
+    GRADLE_USER_HOME: gradle
+  tests:
+    live: gradle
+  isolated: true
+  lib: lib.sh
+  script: run.sh
